@@ -14,6 +14,7 @@
 #include <QCryptographicHash>
 #include <QTextStream>
 #include <QIODevice>
+#include <QDir>
 
 main_window::main_window(QWidget *parent) :
     QMainWindow(parent),
@@ -60,7 +61,7 @@ void main_window::show_directory(QString const& dir) {
     setWindowTitle(QString("Directory content - %1").arg(dir));
     QDir d(dir);
     QDir::setCurrent(dir);
-    QFileInfoList list = d.entryInfoList();
+    QFileInfoList list = d.entryInfoList(QDir::NoDot | QDir::AllEntries);
     for (QFileInfo file_info: list) {
         QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeWidget);
 
@@ -165,8 +166,9 @@ void main_window::find_suspects(QDir const &dir)
 
 void main_window::change_directory(QTreeWidgetItem* item) {
     QString line = QDir::currentPath() + '/' + item->text(0);
-    main_window::show_directory(line);
-//    QDir::setCurrent(item->text(0));
+    if (QFileInfo(line).isDir()) {
+        main_window::show_directory(line);
+    }
 }
 
 
