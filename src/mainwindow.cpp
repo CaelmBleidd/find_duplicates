@@ -38,7 +38,7 @@ main_window::main_window(QWidget *parent) :
     connect(ui->actionExit, &QAction::triggered, this, &QWidget::close);
     connect(ui->actionAbout, &QAction::triggered, this, &main_window::show_about_dialog);
     connect(ui->actionScan_Directory, &QAction::triggered, this, &main_window::scan_directory);
-//    connect(ui->actionChange_Directory, SIGNAL(QTreeWidget::itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(main_window::change_directory));
+    connect(ui->treeWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(change_directory(QTreeWidgetItem*)));
 
 
     show_directory(QDir::homePath());
@@ -50,7 +50,6 @@ void main_window::select_directory() {
     QString dir = QFileDialog::getExistingDirectory(this, "Select directory for scanning", QDir::homePath(), QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
     if (!dir.isEmpty()) {
         main_window::show_directory(dir);
-        QDir::setCurrent(dir);
     }
 }
 
@@ -60,6 +59,7 @@ void main_window::show_directory(QString const& dir) {
     ui->treeWidget->clear();
     setWindowTitle(QString("Directory content - %1").arg(dir));
     QDir d(dir);
+    QDir::setCurrent(dir);
     QFileInfoList list = d.entryInfoList();
     for (QFileInfo file_info: list) {
         QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeWidget);
@@ -163,15 +163,11 @@ void main_window::find_suspects(QDir const &dir)
     }
 }
 
-
-
-
-void main_window::change_directory() {
-    //     не реализовано
-    //    sssssssss
+void main_window::change_directory(QTreeWidgetItem* item) {
+    QString line = QDir::currentPath() + '/' + item->text(0);
+    main_window::show_directory(line);
+//    QDir::setCurrent(item->text(0));
 }
-
-
 
 
 void main_window::show_about_dialog() {

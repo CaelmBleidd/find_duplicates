@@ -4,7 +4,9 @@
 #include <QMainWindow>
 #include <memory>
 #include <QDir>
+#include <QWidgetItem>
 #include <QMap>
+#include <qtreewidget>
 
 namespace Ui {
 class MainWindow;
@@ -24,7 +26,7 @@ private slots:
     void scan_directory();
     void show_about_dialog();
     void show_directory(QString const& dir);
-    void change_directory();
+    void change_directory(QTreeWidgetItem* item);
 
 //private signals:
 
