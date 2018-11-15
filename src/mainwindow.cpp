@@ -27,8 +27,6 @@ main_window::main_window(QWidget *parent) :
     ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     ui->treeWidget->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
 
-//    ui->treeWidget->setSortingEnabled(true);
-
     QCommonStyle style;
     ui->actionShow_Directory->setIcon(style.standardIcon(QCommonStyle::SP_DialogOpenButton));
     ui->actionExit->setIcon(style.standardIcon(QCommonStyle::SP_DialogCloseButton));
@@ -41,11 +39,13 @@ main_window::main_window(QWidget *parent) :
     connect(ui->actionScan_Directory, &QAction::triggered, this, &main_window::scan_directory);
     connect(ui->treeWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(change_directory(QTreeWidgetItem*)));
 
-
     show_directory(QDir::homePath());
 }
 
-main_window::~main_window() {}
+main_window::~main_window() {
+    files.clear();
+    duplicates.clear();
+}
 
 void main_window::select_directory() {
     QString dir = QFileDialog::getExistingDirectory(this, "Select directory for scanning", QDir::homePath(), QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
@@ -86,7 +86,7 @@ void main_window::scan_directory()
     setWindowTitle(QString("Result of scanning - %1").arg(QDir::currentPath()));
 
     auto dir = QDir::current();
-    dir.setFilter(QDir::Hidden | QDir::NoDotAndDotDot | QDir::AllEntries);
+    dir.setFilter(QDir::Hidden | QDir::NoDotAndDotDot | QDir::AllEntries | QDir::NoSymLinks);
     find_suspects(dir);
     find_duplicates();
     int i = 0;
@@ -158,7 +158,7 @@ void main_window::find_suspects(QDir const &dir)
             files[file_info.size()].push_back(file_info.absoluteFilePath());
         } else {
             auto dire = QDir(file_info.filePath());
-            dire.setFilter(QDir::Hidden | QDir::NoDotAndDotDot | QDir::AllEntries);
+            dire.setFilter(QDir::Hidden | QDir::NoDotAndDotDot | QDir::AllEntries | QDir::NoSymLinks);
             find_suspects(dire);
         }
     }
