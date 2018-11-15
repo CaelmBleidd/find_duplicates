@@ -26,6 +26,7 @@ main_window::main_window(QWidget *parent) :
     ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     ui->treeWidget->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    ui->treeWidget->header()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
 
     QCommonStyle style;
     ui->actionShow_Directory->setIcon(style.standardIcon(QCommonStyle::SP_DialogOpenButton));
@@ -66,12 +67,14 @@ void main_window::show_directory(QString const& dir) {
         QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeWidget);
 
         item->setTextColor(0, Qt::black);
-        item->setTextColor(1, Qt::red);
-        item->setTextColor(2, Qt::blue);
+        item->setTextColor(1, Qt::gray);
+        item->setTextColor(2, Qt::red);
+        item->setTextColor(3, Qt::blue);
 
         item->setText(0, file_info.fileName());
-        item->setText(1, QString::number(file_info.size()));
-        item->setText(2, file_info.lastModified().toString("hh:mm:ss dd.MM.yyyy"));
+        item->setText(1, file_info.filePath());
+        item->setText(2, QString::number(file_info.size()));
+        item->setText(3, file_info.lastModified().toString("hh:mm:ss dd.MM.yyyy"));
 
         ui->treeWidget->addTopLevelItem(item);
     }
@@ -104,12 +107,15 @@ void main_window::scan_directory()
               QFileInfo file(path);
 
               item->setTextColor(0, Qt::black);
-              item->setTextColor(1, Qt::red);
-              item->setTextColor(2, Qt::blue);
+              item->setTextColor(1, Qt::gray);
+              item->setTextColor(2, Qt::red);
+              item->setTextColor(3, Qt::blue);
+
 
               item->setText(0, file.fileName());
-              item->setText(1, QString::number(file.size()));
-              item->setText(2, file.lastModified().toString("hh:mm:ss dd.MM.yyyy"));
+              item->setText(1, file.filePath());
+              item->setText(2, QString::number(file.size()));
+              item->setText(3, file.lastModified().toString("hh:mm:ss dd.MM.yyyy"));
 
 
 
