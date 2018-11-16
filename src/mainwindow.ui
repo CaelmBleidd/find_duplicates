@@ -29,6 +29,12 @@
     </property>
     <item>
      <widget class="QTreeWidget" name="treeWidget">
+      <property name="selectionMode">
+       <enum>QAbstractItemView::ExtendedSelection</enum>
+      </property>
+      <property name="headerHidden">
+       <bool>false</bool>
+      </property>
       <attribute name="headerMinimumSectionSize">
        <number>100</number>
       </attribute>
@@ -98,6 +104,10 @@
    <addaction name="actionShow_Directory"/>
    <addaction name="separator"/>
    <addaction name="actionScan_Directory"/>
+   <addaction name="separator"/>
+   <addaction name="actionHome"/>
+   <addaction name="separator"/>
+   <addaction name="actionClear"/>
   </widget>
   <action name="actionShow_Directory">
    <property name="text">
@@ -111,18 +121,13 @@
    <property name="text">
     <string>&amp;Exit</string>
    </property>
+   <property name="shortcut">
+    <string>Meta+Q</string>
+   </property>
   </action>
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
-   </property>
-  </action>
-  <action name="actionChange_Directory">
-   <property name="text">
-    <string>&amp;Change Directory</string>
-   </property>
-   <property name="toolTip">
-    <string>Change Directory</string>
    </property>
   </action>
   <action name="actionScan_Directory">
@@ -131,6 +136,25 @@
    </property>
    <property name="toolTip">
     <string>Scan Directory</string>
+   </property>
+   <property name="shortcut">
+    <string>Meta+S</string>
+   </property>
+  </action>
+  <action name="actionHome">
+   <property name="text">
+    <string>Home</string>
+   </property>
+   <property name="toolTip">
+    <string>Go to home folder</string>
+   </property>
+  </action>
+  <action name="actionClear">
+   <property name="text">
+    <string>Clear</string>
+   </property>
+   <property name="toolTip">
+    <string>Delete choosen files</string>
    </property>
   </action>
  </widget>

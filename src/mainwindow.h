@@ -26,15 +26,19 @@ private slots:
     void show_about_dialog();
     void show_directory(QString const& dir);
     void change_directory(QTreeWidgetItem* item);
+    void show_home();
 
 private:
-    void find_suspects(QDir const& dir);
+    void find_suspects(QString const& dir);
     void find_duplicates();
+    void set_data(QTreeWidgetItem* item, QString const& path);
 
     std::unique_ptr<Ui::MainWindow> ui;
 
-    QMap<QString, QVector<QString>>  duplicates;
-    QMap<qlonglong, QVector<QString>> files;
+    QMap<QString, QVector<QString>>  _duplicates;
+    QMap<qlonglong, QVector<QString>> _files;
+
+    QString last_scanned_directory;
 };
 
 #endif // MAINWINDOW_H
