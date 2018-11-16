@@ -101,13 +101,15 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionShow_Directory"/>
+   <addaction name="actionReturn"/>
    <addaction name="separator"/>
-   <addaction name="actionScan_Directory"/>
+   <addaction name="actionShow_Directory"/>
    <addaction name="separator"/>
    <addaction name="actionHome"/>
    <addaction name="separator"/>
-   <addaction name="actionClear"/>
+   <addaction name="actionScan_Directory"/>
+   <addaction name="separator"/>
+   <addaction name="actionClear_All"/>
   </widget>
   <action name="actionShow_Directory">
    <property name="text">
@@ -149,12 +151,20 @@
     <string>Go to home folder</string>
    </property>
   </action>
-  <action name="actionClear">
+  <action name="actionClear_All">
    <property name="text">
-    <string>Clear</string>
+    <string>Clear_All</string>
    </property>
    <property name="toolTip">
-    <string>Delete choosen files</string>
+    <string>Remove all duplicates</string>
+   </property>
+  </action>
+  <action name="actionReturn">
+   <property name="text">
+    <string>Return</string>
+   </property>
+   <property name="toolTip">
+    <string>Return to the last folder</string>
    </property>
   </action>
  </widget>

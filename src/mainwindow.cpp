@@ -8,13 +8,8 @@
 #include <QMessageBox>
 #include <QDateTime>
 #include <QFileSystemModel>
-#include <QWidgetItem>
 #include <QCryptographicHash>
-#include <qcryptographichash.h>
-#include <QCryptographicHash>
-#include <QTextStream>
 #include <QIODevice>
-#include <QDir>
 
 main_window::main_window(QWidget *parent) :
         QMainWindow(parent),
@@ -23,9 +18,8 @@ main_window::main_window(QWidget *parent) :
     setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), qApp->desktop()->availableGeometry()));
 
 
-
     ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::Stretch);
+    ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::Interactive);
     ui->treeWidget->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
     ui->treeWidget->header()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
 
@@ -37,15 +31,19 @@ main_window::main_window(QWidget *parent) :
     ui->actionAbout->setIcon(style.standardIcon(QCommonStyle::SP_DialogHelpButton));
     ui->actionScan_Directory->setIcon(style.standardIcon(QCommonStyle::SP_DialogResetButton));
     ui->actionHome->setIcon(style.standardIcon(QCommonStyle::SP_DirHomeIcon));
+    ui->actionClear_All->setIcon(style.standardIcon(QCommonStyle::SP_TrashIcon));
+    ui->actionReturn->setIcon(style.standardIcon(QCommonStyle::SP_FileDialogBack));
 
 
     connect(ui->actionShow_Directory, &QAction::triggered, this, &main_window::select_directory);
     connect(ui->actionExit, &QAction::triggered, this, &QWidget::close);
     connect(ui->actionAbout, &QAction::triggered, this, &main_window::show_about_dialog);
     connect(ui->actionScan_Directory, &QAction::triggered, this, &main_window::scan_directory);
+    connect(ui->actionClear_All, &QAction::triggered, this, &main_window::clear_all_duplicates);
     connect(ui->actionHome, &QAction::triggered, this, &main_window::show_home);
-    connect(ui->treeWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)), this,
-            SLOT(change_directory(QTreeWidgetItem *)));
+    connect(ui->actionReturn, &QAction::triggered, this, &main_window::return_to_folder);
+    connect(ui->treeWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem * , int)), this,
+            SLOT(change_directory(QTreeWidgetItem * )));
 
     show_directory(QDir::homePath());
 }
@@ -63,27 +61,9 @@ void main_window::select_directory() {
     }
 }
 
-
-void main_window::show_directory(QString const &dir) {
-    ui->treeWidget->clear();
-    _files.clear();
-    _duplicates.clear();
-
-    setWindowTitle(QString("Directory content - %1").arg(dir));
-    QDirIterator iter(dir, QDir::NoDot | QDir::AllEntries);
-    QDir::setCurrent(dir);
-
-    while (iter.hasNext()) {
-        iter.next();
-        QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeWidget);
-        set_data(item, iter.filePath());
-    }
-    ui->treeWidget->sortItems(0, Qt::SortOrder::AscendingOrder);
-}
-
 void main_window::scan_directory() {
-    if (last_scanned_directory != QDir::currentPath()) {
-        last_scanned_directory = QDir::currentPath();
+    if (_last_scanned_directory != QDir::currentPath()) {
+        _last_scanned_directory = QDir::currentPath();
 
         ui->treeWidget->clear();
         main_window::_duplicates.clear();
@@ -96,33 +76,50 @@ void main_window::scan_directory() {
         find_suspects(dir.path());
         find_duplicates();
 
-        bool are_there_duplicates = false;
+        qint64 count_duplicates = 0;
         for (auto paths : _duplicates) {
             if (paths.size() > 1) {
-                are_there_duplicates = true;
-                QTreeWidgetItem* parent =  new QTreeWidgetItem(ui->treeWidget);
+                ++count_duplicates;
+                QTreeWidgetItem *parent = new QTreeWidgetItem(ui->treeWidget);
 
                 set_data(parent, *paths.begin());
 
                 for (auto path: paths) {
-                    QTreeWidgetItem* child = new QTreeWidgetItem();
+                    QTreeWidgetItem *child = new QTreeWidgetItem();
                     set_data(child, path);
                     parent->addChild(child);
-//                    drow_data(path);
                 }
+                parent->sortChildren(3, Qt::SortOrder::AscendingOrder);
                 ui->treeWidget->addTopLevelItem(parent);
             }
         }
         ui->treeWidget->sortItems(2, Qt::SortOrder::DescendingOrder);
 
-        if (!are_there_duplicates) {
-            QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeWidget);
-            item->setText(0, "No duplicates found");
-            item->setTextColor(0, Qt::black);
-            ui->treeWidget->addTopLevelItem(item);
+        if (count_duplicates == 0) {
+            information_form("There're no duplicates in the folder");
+        } else {
+            information_form(QString("%1 duplicates found").arg(count_duplicates));
         }
     }
 }
+
+void main_window::show_directory(QString const &dir) {
+    ui->treeWidget->clear();
+    _files.clear();
+    _duplicates.clear();
+
+    QDirIterator iter(dir, QDir::NoDot | QDir::AllEntries);
+    QDir::setCurrent(dir);
+    setWindowTitle(QString("Directory content - %1").arg(QDir::currentPath()));
+
+    while (iter.hasNext()) {
+        iter.next();
+        QTreeWidgetItem *item = new QTreeWidgetItem(ui->treeWidget);
+        set_data(item, iter.filePath());
+    }
+    ui->treeWidget->sortItems(0, Qt::SortOrder::AscendingOrder);
+}
+
 
 void main_window::find_duplicates() {
     for (auto paths: _files) {
@@ -143,8 +140,7 @@ void main_window::find_duplicates() {
     }
 }
 
-void main_window::set_data(QTreeWidgetItem* item, const QString &path) {
-
+void main_window::set_data(QTreeWidgetItem *item, const QString &path) {
     QFileInfo file(path);
 
     item->setTextColor(0, Qt::black);
@@ -157,8 +153,6 @@ void main_window::set_data(QTreeWidgetItem* item, const QString &path) {
     item->setText(1, file.filePath());
     item->setData(2, Qt::DisplayRole, file.size());
     item->setData(3, Qt::DisplayRole, file.lastModified());
-
-//    ui->treeWidget->addTopLevelItem(item);
 }
 
 void main_window::find_suspects(QString const &dir) {
@@ -181,12 +175,42 @@ void main_window::change_directory(QTreeWidgetItem *item) {
     }
 }
 
-void main_window::show_home()
-{
+void main_window::show_home() {
     show_directory(QDir::homePath());
+}
+
+void main_window::clear_all_duplicates() {
+    bool permission = accept_form();
+    if (permission) {
+        for (qint64 i = 0; i < ui->treeWidget->topLevelItemCount(); ++i) {
+            QTreeWidgetItem *parent = ui->treeWidget->topLevelItem(i);
+            for (qint64 j = 1; j < parent->childCount(); ++j) {
+                QFile(parent->child(j)->text(1)).remove();
+            }
+        }
+        information_form("All duplicates has been removed");
+        show_directory(QDir::currentPath());
+    } else {
+        //do nothing
+    }
+}
+
+void main_window::return_to_folder() {
+    QDir::setCurrent("..");
+    show_directory(QDir::currentPath());
+}
+
+bool main_window::accept_form() {
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "Attention", "Are you really want to delete all the duplicates?",
+                                  QMessageBox::Yes | QMessageBox::No);
+    return (reply == QMessageBox::Yes);
+}
+
+void main_window::information_form(QString const &text) {
+    QMessageBox::information(this, QString::fromUtf8("Сообщение"), text);
 }
 
 void main_window::show_about_dialog() {
     QMessageBox::aboutQt(this);
 }
-
