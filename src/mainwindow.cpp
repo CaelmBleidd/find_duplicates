@@ -10,6 +10,10 @@
 #include <QFileSystemModel>
 #include <QCryptographicHash>
 #include <QIODevice>
+#include <QTreeView>
+#include <QStandardItemModel>
+#include <QStandardItem>
+#include <QStringList>
 
 main_window::main_window(QWidget *parent) :
         QMainWindow(parent),
@@ -18,6 +22,7 @@ main_window::main_window(QWidget *parent) :
     setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), qApp->desktop()->availableGeometry()));
 
     ui->treeWidget->setUniformRowHeights(true);
+
 
     ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::Interactive);
@@ -63,7 +68,10 @@ void main_window::select_directory() {
 }
 
 void main_window::scan_directory() {
-    if (_last_scanned_directory != QDir::currentPath()) {
+
+    if ((_last_scanned_directory == QDir::currentPath() && accept_form("Are you really want to scan dir again?")) ||
+         _last_scanned_directory != QDir::currentPath()) {
+
         _last_scanned_directory = QDir::currentPath();
 
         ui->treeWidget->clear();
@@ -102,17 +110,16 @@ void main_window::scan_directory() {
         } else {
             information_form(QString("%1 duplicates found").arg(count_duplicates));
         }
-    } else {
-        information_form(QString("In dir %1 duplicates already has beed find").arg(QDir::currentPath()));
-    }
+
+   }
 }
 
 void main_window::clear_all_duplicates() {
-    bool permission = accept_form();
+    bool permission = accept_form("Are you really want to delete all the duplicates?");
     if (permission) {
-        for (qint64 i = 0; i < ui->treeWidget->topLevelItemCount(); ++i) {
+        for (int i = 0; i < ui->treeWidget->topLevelItemCount(); ++i) {
             QTreeWidgetItem *parent = ui->treeWidget->topLevelItem(i);
-            for (qint64 j = 1; j < parent->childCount(); ++j) {
+            for (int j = 1; j < parent->childCount(); ++j) {
                 QFile(parent->child(j)->text(1)).remove();
             }
         }
@@ -144,13 +151,12 @@ void main_window::find_duplicates() {
     for (auto paths: _files) {
         if (paths.size() > 1) {
             for (auto path : paths) {
-                QCryptographicHash crypto(QCryptographicHash::Md5);
+                QCryptographicHash crypto(QCryptographicHash::Sha1);
                 QFile file(path);
                 file.open(QFile::ReadOnly);
-
                 crypto.addData(file.readAll());
                 QByteArray hash = crypto.result();
-                QString string_hash = crypto.result().toHex().data();
+                QString string_hash = hash.toHex().data();
                 _duplicates[string_hash].push_back(path);
             }
         }
@@ -201,9 +207,9 @@ void main_window::return_to_folder() {
     show_directory(QDir::currentPath());
 }
 
-bool main_window::accept_form() {
+bool main_window::accept_form(QString const& text) {
     QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(this, "Attention", "Are you really want to delete all the duplicates?",
+    reply = QMessageBox::question(this, "Attention", text,
                                   QMessageBox::Yes | QMessageBox::No);
     return (reply == QMessageBox::Yes);
 }
@@ -215,3 +221,4 @@ void main_window::information_form(QString const &text) {
 void main_window::show_about_dialog() {
     QMessageBox::aboutQt(this);
 }
+

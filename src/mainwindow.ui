@@ -114,6 +114,7 @@
    <addaction name="actionScan_Directory"/>
    <addaction name="separator"/>
    <addaction name="actionClear_All"/>
+   <addaction name="separator"/>
   </widget>
   <action name="actionShow_Directory">
    <property name="text">

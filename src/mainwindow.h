@@ -35,7 +35,8 @@ private:
     void find_duplicates();
     void set_data(QTreeWidgetItem *item, QString const &path);
     void information_form(QString const &text);
-    bool accept_form();
+    bool accept_form(QString const &text);
+
 
     std::unique_ptr<Ui::MainWindow> ui;
 
