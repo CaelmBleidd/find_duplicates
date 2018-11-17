@@ -10,10 +10,6 @@
 #include <QFileSystemModel>
 #include <QCryptographicHash>
 #include <QIODevice>
-#include <QTreeView>
-#include <QStandardItemModel>
-#include <QStandardItem>
-#include <QStringList>
 
 main_window::main_window(QWidget *parent) :
         QMainWindow(parent),
@@ -23,9 +19,8 @@ main_window::main_window(QWidget *parent) :
 
     ui->treeWidget->setUniformRowHeights(true);
 
-
     ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::Interactive);
+    ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::Stretch);
     ui->treeWidget->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
     ui->treeWidget->header()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
 
@@ -209,13 +204,12 @@ void main_window::return_to_folder() {
 
 bool main_window::accept_form(QString const& text) {
     QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(this, "Attention", text,
-                                  QMessageBox::Yes | QMessageBox::No);
+    reply = QMessageBox::question(this, "Attention", text, QMessageBox::Yes | QMessageBox::No);
     return (reply == QMessageBox::Yes);
 }
 
 void main_window::information_form(QString const &text) {
-    QMessageBox::information(this, QString::fromUtf8("Сообщение"), text);
+    QMessageBox::information(this, QString::fromUtf8("Notice"), text);
 }
 
 void main_window::show_about_dialog() {
