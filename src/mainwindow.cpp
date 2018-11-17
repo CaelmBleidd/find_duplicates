@@ -17,6 +17,7 @@ main_window::main_window(QWidget *parent) :
     ui->setupUi(this);
     setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), qApp->desktop()->availableGeometry()));
 
+    ui->treeWidget->setUniformRowHeights(true);
 
     ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::Interactive);
@@ -97,9 +98,28 @@ void main_window::scan_directory() {
 
         if (count_duplicates == 0) {
             information_form("There're no duplicates in the folder");
+            show_directory(QDir::currentPath());
         } else {
             information_form(QString("%1 duplicates found").arg(count_duplicates));
         }
+    } else {
+        information_form(QString("In dir %1 duplicates already has beed find").arg(QDir::currentPath()));
+    }
+}
+
+void main_window::clear_all_duplicates() {
+    bool permission = accept_form();
+    if (permission) {
+        for (qint64 i = 0; i < ui->treeWidget->topLevelItemCount(); ++i) {
+            QTreeWidgetItem *parent = ui->treeWidget->topLevelItem(i);
+            for (qint64 j = 1; j < parent->childCount(); ++j) {
+                QFile(parent->child(j)->text(1)).remove();
+            }
+        }
+        information_form("All duplicates has been removed");
+        show_directory(QDir::currentPath());
+    } else {
+        //do nothing
     }
 }
 
@@ -120,18 +140,15 @@ void main_window::show_directory(QString const &dir) {
     ui->treeWidget->sortItems(0, Qt::SortOrder::AscendingOrder);
 }
 
-
 void main_window::find_duplicates() {
     for (auto paths: _files) {
         if (paths.size() > 1) {
-
             for (auto path : paths) {
                 QCryptographicHash crypto(QCryptographicHash::Md5);
                 QFile file(path);
                 file.open(QFile::ReadOnly);
-                while (!file.atEnd()) {
-                    crypto.addData(file.read(8192));
-                }
+
+                crypto.addData(file.readAll());
                 QByteArray hash = crypto.result();
                 QString string_hash = crypto.result().toHex().data();
                 _duplicates[string_hash].push_back(path);
@@ -177,22 +194,6 @@ void main_window::change_directory(QTreeWidgetItem *item) {
 
 void main_window::show_home() {
     show_directory(QDir::homePath());
-}
-
-void main_window::clear_all_duplicates() {
-    bool permission = accept_form();
-    if (permission) {
-        for (qint64 i = 0; i < ui->treeWidget->topLevelItemCount(); ++i) {
-            QTreeWidgetItem *parent = ui->treeWidget->topLevelItem(i);
-            for (qint64 j = 1; j < parent->childCount(); ++j) {
-                QFile(parent->child(j)->text(1)).remove();
-            }
-        }
-        information_form("All duplicates has been removed");
-        show_directory(QDir::currentPath());
-    } else {
-        //do nothing
-    }
 }
 
 void main_window::return_to_folder() {

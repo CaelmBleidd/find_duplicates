@@ -80,6 +80,10 @@
     </property>
     <addaction name="actionShow_Directory"/>
     <addaction name="separator"/>
+    <addaction name="actionHome"/>
+    <addaction name="separator"/>
+    <addaction name="actionClear_All"/>
+    <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -150,6 +154,9 @@
    <property name="toolTip">
     <string>Go to home folder</string>
    </property>
+   <property name="shortcut">
+    <string>Meta+H</string>
+   </property>
   </action>
   <action name="actionClear_All">
    <property name="text">
@@ -158,6 +165,9 @@
    <property name="toolTip">
     <string>Remove all duplicates</string>
    </property>
+   <property name="shortcut">
+    <string>Meta+R</string>
+   </property>
   </action>
   <action name="actionReturn">
    <property name="text">
@@ -165,6 +175,9 @@
    </property>
    <property name="toolTip">
     <string>Return to the last folder</string>
+   </property>
+   <property name="shortcut">
+    <string>Backspace</string>
    </property>
   </action>
  </widget>
