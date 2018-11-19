@@ -149,7 +149,9 @@ void main_window::find_duplicates() {
                 QCryptographicHash crypto(QCryptographicHash::Sha1);
                 QFile file(path);
                 file.open(QFile::ReadOnly);
-                crypto.addData(file.readAll());
+                while(!file.atEnd()) {
+                    crypto.addData(file.read(8192));
+                }
                 QByteArray hash = crypto.result();
                 QString string_hash = hash.toHex().data();
                 _duplicates[string_hash].push_back(path);
