@@ -19,8 +19,8 @@ main_window::main_window(QWidget *parent) :
 
     ui->treeWidget->setUniformRowHeights(true);
 
-    ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::Stretch);
+    ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+    ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     ui->treeWidget->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
     ui->treeWidget->header()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
 
