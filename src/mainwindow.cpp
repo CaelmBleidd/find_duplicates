@@ -1,3 +1,16 @@
+/*
+ * TODO:
+ *  - ReadAll -> read()
+ *  - Fix resize column
+ *  - Add write to file
+ *  - Change hash-function
+ *  - Add enter-pressed support
+ *  - Add navigation
+ *  - Add multithread
+ *  - Add progress-bar
+ * */
+
+
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
@@ -79,6 +92,8 @@ void main_window::scan_directory() {
         dir.setFilter(QDir::Hidden | QDir::NoDotAndDotDot | QDir::AllEntries | QDir::NoSymLinks);
         find_suspects(dir.path());
         find_duplicates();
+
+
 
         qint64 count_duplicates = 0;
         for (auto paths : _duplicates) {
