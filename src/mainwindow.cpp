@@ -32,8 +32,8 @@ main_window::main_window(QWidget *parent) :
 
     ui->treeWidget->setUniformRowHeights(true);
 
-    ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::Stretch);
+    ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+    ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     ui->treeWidget->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
     ui->treeWidget->header()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
 
@@ -164,7 +164,9 @@ void main_window::find_duplicates() {
                 QCryptographicHash crypto(QCryptographicHash::Sha1);
                 QFile file(path);
                 file.open(QFile::ReadOnly);
-                crypto.addData(file.readAll());
+                while(!file.atEnd()) {
+                    crypto.addData(file.read(8192));
+                }
                 QByteArray hash = crypto.result();
                 QString string_hash = hash.toHex().data();
                 _duplicates[string_hash].push_back(path);
