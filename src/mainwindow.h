@@ -7,6 +7,7 @@
 #include <QWidgetItem>
 #include <QMap>
 #include <QTreeWidget>
+#include <QThread>
 
 namespace Ui {
 class MainWindow;
@@ -39,6 +40,7 @@ private:
 
 
     std::unique_ptr<Ui::MainWindow> ui;
+    QThread* hashThread;
 
     QMap<QString, QVector<QString>>  _duplicates;
     QMap<qlonglong, QVector<QString>> _files;

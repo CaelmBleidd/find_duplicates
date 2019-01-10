@@ -25,12 +25,13 @@
 #include <QIODevice>
 
 main_window::main_window(QWidget *parent) :
-        QMainWindow(parent),
-        ui(new Ui::MainWindow) {
-    ui->setupUi(this);
-    setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), qApp->desktop()->availableGeometry()));
+                         QMainWindow(parent),
+                         ui(new Ui::MainWindow) {
 
-    ui->treeWidget->setUniformRowHeights(true);
+    ui->setupUi(this);
+
+    ui->progressBar->setValue(0);
+    ui->progressBar->setMinimum(0);
 
     ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
@@ -40,26 +41,17 @@ main_window::main_window(QWidget *parent) :
     ui->treeWidget->setSortingEnabled(true);
 
     QCommonStyle style;
-    ui->actionShow_Directory->setIcon(style.standardIcon(QCommonStyle::SP_DialogOpenButton));
-    ui->actionExit->setIcon(style.standardIcon(QCommonStyle::SP_DialogCloseButton));
-    ui->actionAbout->setIcon(style.standardIcon(QCommonStyle::SP_DialogHelpButton));
-    ui->actionScan_Directory->setIcon(style.standardIcon(QCommonStyle::SP_DialogResetButton));
-    ui->actionHome->setIcon(style.standardIcon(QCommonStyle::SP_DirHomeIcon));
-    ui->actionClear_All->setIcon(style.standardIcon(QCommonStyle::SP_TrashIcon));
-    ui->actionReturn->setIcon(style.standardIcon(QCommonStyle::SP_FileDialogBack));
 
-
-    connect(ui->actionShow_Directory, &QAction::triggered, this, &main_window::select_directory);
-    connect(ui->actionExit, &QAction::triggered, this, &QWidget::close);
-    connect(ui->actionAbout, &QAction::triggered, this, &main_window::show_about_dialog);
-    connect(ui->actionScan_Directory, &QAction::triggered, this, &main_window::scan_directory);
-    connect(ui->actionClear_All, &QAction::triggered, this, &main_window::clear_all_duplicates);
-    connect(ui->actionHome, &QAction::triggered, this, &main_window::show_home);
-    connect(ui->actionReturn, &QAction::triggered, this, &main_window::return_to_folder);
-    connect(ui->treeWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem * , int)), this,
-            SLOT(change_directory(QTreeWidgetItem * )));
+    connect(ui->actionShow_directory, &QPushButton::clicked, this, &main_window::select_directory);
+    connect(ui->actionScan_directory, &QPushButton::clicked, this, &main_window::scan_directory);
+    connect(ui->actionClear_all, &QPushButton::clicked, this, &main_window::clear_all_duplicates);
+    connect(ui->actionGo_home, &QPushButton::clicked, this, &main_window::show_home);
+    connect(ui->actionChoose_directory, &QPushButton::clicked, this, &main_window::select_directory);
+    connect(ui->actionGo_back, &QPushButton::clicked, this, &main_window::return_to_folder);
+    connect(ui->treeWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem * , int)), this, SLOT(change_directory(QTreeWidgetItem * )));
 
     show_directory(QDir::homePath());
+
 }
 
 main_window::~main_window() {
@@ -77,7 +69,7 @@ void main_window::select_directory() {
 
 void main_window::scan_directory() {
 
-    if ((_last_scanned_directory == QDir::currentPath() && accept_form("Are you really want to scan dir again?")) ||
+    if ((_last_scanned_directory == QDir::currentPath() && accept_form("Do you really want to scan dir again?")) ||
          _last_scanned_directory != QDir::currentPath()) {
 
         _last_scanned_directory = QDir::currentPath();
@@ -92,8 +84,6 @@ void main_window::scan_directory() {
         dir.setFilter(QDir::Hidden | QDir::NoDotAndDotDot | QDir::AllEntries | QDir::NoSymLinks);
         find_suspects(dir.path());
         find_duplicates();
-
-
 
         qint64 count_duplicates = 0;
         for (auto paths : _duplicates) {
@@ -120,12 +110,11 @@ void main_window::scan_directory() {
         } else {
             information_form(QString("%1 duplicates found").arg(count_duplicates));
         }
-
    }
 }
 
 void main_window::clear_all_duplicates() {
-    bool permission = accept_form("Are you really want to delete all the duplicates?");
+    bool permission = accept_form("Do you really want to delete all the duplicates?");
     if (permission) {
         for (int i = 0; i < ui->treeWidget->topLevelItemCount(); ++i) {
             QTreeWidgetItem *parent = ui->treeWidget->topLevelItem(i);
