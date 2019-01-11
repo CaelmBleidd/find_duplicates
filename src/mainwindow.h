@@ -8,6 +8,8 @@
 #include <QMap>
 #include <QTreeWidget>
 #include <QThread>
+#include <QtConcurrent/QtConcurrent>
+#include "hashthread.h"
 
 namespace Ui {
 class MainWindow;
@@ -30,22 +32,25 @@ private slots:
     void return_to_folder();
     void show_home();
     void show_about_dialog();
+    void show_number_of_duplicates(double);
+    void cancel();
+
+public slots:
+    void change_tree(qint64, QMap<QString, QVector<QString>>, QDir const&);
 
 private:
-    void find_suspects(QString const &dir);
-    void find_duplicates();
-    void set_data(QTreeWidgetItem *item, QString const &path);
+    void set_data(QTreeWidgetItem *item, QString const &path, qint64, QString const&);
     void information_form(QString const &text);
     bool accept_form(QString const &text);
+    QThread *thread;
 
 
     std::unique_ptr<Ui::MainWindow> ui;
     QThread* hashThread;
 
-    QMap<QString, QVector<QString>>  _duplicates;
-    QMap<qlonglong, QVector<QString>> _files;
-
     QString _last_scanned_directory;
+
+    qint64 duplicates_number = 0;
 };
 
 #endif // MAINWINDOW_H

@@ -131,6 +131,13 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QPushButton" name="actionCancel">
+        <property name="text">
+         <string>Break scanning</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
     <item row="0" column="0">

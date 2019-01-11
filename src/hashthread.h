@@ -1,6 +1,7 @@
 #ifndef HASHTHREAD_H
 #define HASHTHREAD_H
 
+
 #include <QObject>
 #include <QMainWindow>
 #include <QDir>
@@ -15,23 +16,23 @@
 #include <QtConcurrent/QtConcurrent>
 #include <math.h>
 
-class HashThread
-{
+class HashThread : public QObject {
+    Q_OBJECT
 public:
-    HashThread(QString const &dir): dir_name(dir) {}
+    HashThread(QString const&);
     ~HashThread();
 
 private:
-    void find_suspects(QString const &dir);
-    void find_duplicates();
-    void scan_directory(QString const &dir);
-    QString dir_name;
+    QMap<qint64, QVector<QString>> find_suspects(QDir const&);
+    QString _dir_name;
 
 public slots:
     void process();
 
 signals:
-
+    void finished();
+    void add_to_tree(qint64, QMap<QString, QVector<QString>> const&, QDir const&);
+    void update_timer(double);
 };
 
 #endif // HASHTHREAD_H
