@@ -15,7 +15,7 @@
 
 
 main_window::main_window(QWidget *parent) : QMainWindow(parent), thread(nullptr), ui(new Ui::MainWindow),
-                                            searching_in_process(false)
+                                            searching_in_process(false), directory(true), search_has_ended(false)
 {
 
     ui->setupUi(this);
@@ -23,13 +23,12 @@ main_window::main_window(QWidget *parent) : QMainWindow(parent), thread(nullptr)
     ui->progressBar->setValue(0);
     ui->progressBar->setMinimum(0);
 
-    ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
 
-    ui->treeWidget->setStyleSheet("QTreeWidget { color: black }");
+    ui->listWidget->setStyleSheet("QListWidget { color: black }");
 
     ui->actionCancel->setEnabled(false);
+    ui->actionClear_all->setDisabled(true);
 
-    ui->treeWidget->setSortingEnabled(false);
 
     QCommonStyle style;
 
@@ -37,15 +36,26 @@ main_window::main_window(QWidget *parent) : QMainWindow(parent), thread(nullptr)
     connect(ui->actionScan_directory, &QPushButton::clicked, this, &main_window::scan_directory);
     connect(ui->actionClear_all, &QPushButton::clicked, this, &main_window::clear_all_duplicates);
     connect(ui->actionGo_home, &QPushButton::clicked, this, &main_window::show_home);
-    connect(ui->actionChoose_directory, &QPushButton::clicked, this, &main_window::select_directory);
     connect(ui->actionGo_back, &QPushButton::clicked, this, &main_window::return_to_folder);
-    connect(ui->treeWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem * , int)), this, SLOT(change_directory(QTreeWidgetItem * )));
+    connect(ui->listWidget, &QListWidget::itemDoubleClicked, this, &main_window::on_double_clicked);
     connect(ui->actionCancel, &QPushButton::clicked, this, &main_window::cancel);
 
     show_directory(QDir::homePath());
 }
 
 main_window::~main_window() {}
+
+void main_window::keyPressEvent(QKeyEvent *event) {
+    if (event->key() == Qt::Key_Return && ui->listWidget->selectedItems().size() > 0) {
+        on_double_clicked();
+        return;
+    }
+
+    if (event->key() == Qt::Key_Backspace && ui->listWidget->selectedItems().size() > 0) {
+        return_to_folder();
+        return;
+    }
+}
 
 void main_window::select_directory() {
     QString dir = QFileDialog::getExistingDirectory(this, "Select directory for scanning", QDir::homePath(),
@@ -60,12 +70,18 @@ void main_window::show_number_of_duplicates(double seconds) {
     box.setText(QString("%1 duplicates found in %2 seconds").arg(duplicates_number).arg(seconds));
     box.addButton(QMessageBox::Ok);
     box.exec();
-    if (duplicates_number == 0)
-        show_directory(QDir::currentPath());
     ui->actionCancel->setDisabled(true);
     ui->actionScan_directory->setDisabled(true);
     ui->actionGo_back->setEnabled(true);
     ui->actionGo_home->setEnabled(true);
+
+    search_has_ended = true;
+    searching_in_process = false;
+    directory = false;
+    if (duplicates_number == 0) {
+        show_directory(QDir::currentPath());
+        ui->actionScan_directory->setEnabled(true);
+    }
 }
 
 
@@ -73,24 +89,8 @@ void main_window::change_tree(qint64 size, QMap<QString, QVector<QString>> const
     for (auto hash: hashes.keys()) {
         if (hashes[hash].size() > 1) {
             ++duplicates_number;
-            QTreeWidgetItem *parent = new QTreeWidgetItem(ui->treeWidget);
-
-
-//            QDir file(QDir::currentPath());
-//            item->setText(0, file.relativeFilePath(path));
-
-            parent->setText(0, QDir(QDir::currentPath()).relativeFilePath(hashes[hash][0]));
-//            set_data(parent, hashes[hash][0]);
-            for (auto path: hashes[hash]) {
-                QTreeWidgetItem *child = new QTreeWidgetItem();
-//                set_data(child, path);
-                child->setText(0, QDir(QDir::currentPath()).relativeFilePath(path));
-
-                child->setBackgroundColor(1, Qt::green);
-                parent->addChild(child);
-            }
-
-            ui->treeWidget->addTopLevelItem(parent);
+            ui->listWidget->addItem(hash);
+            _duplicates[hash] = hashes[hash];
         }
     }
 }
@@ -98,6 +98,10 @@ void main_window::change_tree(qint64 size, QMap<QString, QVector<QString>> const
 void main_window::scanning_was_stopped() {
     ui->progressBar->setValue(0);
     ui->actionCancel->setDisabled(true);
+
+    searching_in_process = false;
+    search_has_ended = false;
+    directory = true;
 
     show_directory(QDir::currentPath());
     _last_scanned_directory = "";
@@ -113,7 +117,7 @@ void main_window::scan_directory() {
          _last_scanned_directory != QDir::currentPath()) {
 
         _last_scanned_directory = QDir::currentPath();
-        ui->treeWidget->clear();
+        ui->listWidget->clear();
         duplicates_number = 0;
 
         HashThread* hash_thread = new HashThread(_last_scanned_directory);
@@ -144,6 +148,10 @@ void main_window::scan_directory() {
         ui->progressBar->setValue(0);
 
         searching_in_process = true;
+        search_has_ended = false;
+        directory = false;
+
+        ui->actionScan_directory->setEnabled(false);
         thread->start(); 
         ui->actionCancel->setEnabled(true);
    }
@@ -153,25 +161,33 @@ void main_window::scan_directory() {
 
 //надо вынести
 void main_window::clear_all_duplicates() {
-    bool permission = accept_form("Do you really want to delete all the duplicates?");
-    if (permission) {
-        for (int i = 0; i < ui->treeWidget->topLevelItemCount(); ++i) {
-            QTreeWidgetItem *parent = ui->treeWidget->topLevelItem(i);
-            for (int j = 1; j < parent->childCount(); ++j) {
-                QFile(parent->child(j)->text(0)).remove();
-            }
-        }
-        information_form("All duplicates has been removed");
-        show_directory(QDir::currentPath());
-    } else {
-        //do nothing
-    }
+//    bool permission = accept_form("Do you really want to delete all the duplicates?");
+//    if (permission) {
+//        for (int i = 0; i < ui->treeWidget->topLevelItemCount(); ++i) {
+//            QTreeWidgetItem *parent = ui->treeWidget->topLevelItem(i);
+//            for (int j = 1; j < parent->childCount(); ++j) {
+//                QFile(parent->child(j)->text(0)).remove();
+//            }
+//        }
+//        information_form("All duplicates has been removed");
+//        show_directory(QDir::currentPath());
+//    } else {
+//        //do nothing
+//    }
 }
 
 void main_window::show_directory(QString const &dir) {
-    ui->treeWidget->clear();
+    ui->listWidget->clear();
 
     ui->progressBar->setValue(0);
+    ui->actionCancel->setDisabled(true);
+    ui->actionGo_home->setEnabled(true);
+    ui->actionGo_back->setEnabled(true);
+    ui->actionScan_directory->setEnabled(true);
+
+    directory = true;
+    search_has_ended = false;
+    searching_in_process = false;
 
     QDirIterator iter(dir, QDir::NoDot | QDir::AllEntries);
     QDir::setCurrent(dir);
@@ -179,10 +195,8 @@ void main_window::show_directory(QString const &dir) {
 
     while (iter.hasNext()) {
         iter.next();
-        QTreeWidgetItem *item = new QTreeWidgetItem(ui->treeWidget);
-        set_data(item, iter.filePath());
+        ui->listWidget->addItem(QDir(QDir::currentPath()).relativeFilePath(iter.filePath()));
     }
-    ui->treeWidget->sortItems(0, Qt::SortOrder::AscendingOrder);
 }
 
 
@@ -201,8 +215,17 @@ void main_window::update_progress_value() {
     ui->progressBar->setValue(ui->progressBar->value() + 1);
 }
 
-void main_window::change_directory(QTreeWidgetItem *item) {
-    QString line = QDir::currentPath() + QDir::separator() + item->text(0);
+void main_window::on_double_clicked() {
+    if (search_has_ended && !directory) {
+        QString hash = ui->listWidget->currentItem()->text();
+        ui->listWidget->clear();
+        for (auto &file: _duplicates[hash]) {
+            ui->listWidget->addItem(file);
+        }
+
+        return;
+    }
+    QString line = QDir::currentPath() + QDir::separator() + ui->listWidget->currentItem()->text();
     if (QFileInfo(line).isDir()) {
         main_window::show_directory(line);
     }
@@ -213,6 +236,13 @@ void main_window::show_home() {
 }
 
 void main_window::return_to_folder() {
+    if (!directory) {
+        ui->listWidget->clear();
+        for (auto &hash: _duplicates.keys()) {
+              ui->listWidget->addItem(hash);
+        }
+        return;
+    }
     QDir::setCurrent("..");
     show_directory(QDir::currentPath());
 }

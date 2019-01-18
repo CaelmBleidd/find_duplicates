@@ -79,6 +79,7 @@ void HashThread::process() {
             auto hashes = future.result();
 
             emit update_progress_bar();
+
             emit add_to_tree(size, hashes, directory);
 
         }

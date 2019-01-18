@@ -25,6 +25,7 @@ public:
 private:
     QMap<qint64, QVector<QString>> find_suspects(QDir const&);
     QString _dir_name;
+    QMap<QString, QVector<QString>> _duplicates;
 
 public slots:
     void process();
