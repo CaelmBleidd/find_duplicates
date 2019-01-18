@@ -61,22 +61,7 @@
       </attribute>
       <column>
        <property name="text">
-        <string>Filename</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
         <string>Path</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>Size</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>Data of change</string>
        </property>
       </column>
      </widget>

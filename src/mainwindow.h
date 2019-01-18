@@ -22,6 +22,7 @@ class main_window : public QMainWindow
 public:
     explicit main_window(QWidget *parent = nullptr);
     ~main_window();
+    std::atomic_bool searching_in_process;
 
 private slots:
     void select_directory();
@@ -36,10 +37,14 @@ private slots:
     void cancel();
 
 public slots:
-    void change_tree(qint64, QMap<QString, QVector<QString>>, QDir const&);
+    void change_tree(qint64, QMap<QString, QVector<QString>> const&, QDir const&);
+    void change_max_progress_value(int);
+    void update_progress_value();
+    void scanning_was_stopped();
+
 
 private:
-    void set_data(QTreeWidgetItem *item, QString const &path, qint64, QString const&);
+    void set_data(QTreeWidgetItem *item, QString const &path);
     void information_form(QString const &text);
     bool accept_form(QString const &text);
     QThread *thread;

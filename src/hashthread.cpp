@@ -4,7 +4,6 @@ HashThread::HashThread(QString const &dir_name): _dir_name(dir_name) {}
 
 HashThread::~HashThread() {}
 
-//group by size
 QMap<qint64, QVector<QString>> HashThread::find_suspects(QDir const &directory) {
 
     QMap<qint64, QVector<QString>> grouped_files;
@@ -23,6 +22,7 @@ QMap<qint64, QVector<QString>> HashThread::find_suspects(QDir const &directory) 
             auto size = file_info.size();
             grouped_files[size].push_back(file_info.absoluteFilePath());
         }
+        if (QThread::currentThread()->isInterruptionRequested())  break;
     }
     return grouped_files;
 }
@@ -56,18 +56,31 @@ void HashThread::process() {
 
         auto grouped_files = find_suspects(directory);
 
+        emit set_max_progress_value(grouped_files.keys().size());
+
         for (auto size: grouped_files.keys()) {
 
-            if (QThread::currentThread()->isInterruptionRequested()) break;
+
+            if (QThread::currentThread()->isInterruptionRequested()) {
+                emit scanning_was_stopped();
+                emit finished();
+                return;
+            }
 
             auto suspects = grouped_files[size];
-            if (suspects.size() == 1) continue;
+            if (suspects.size() == 1) {
+                emit update_progress_bar();
+                continue;
+            }
 
             QFuture<QMap<QString, QVector<QString>>> future = QtConcurrent::mappedReduced(suspects, calculateHash, add_to_result);
             future.waitForFinished();
 
             auto hashes = future.result();
+
+            emit update_progress_bar();
             emit add_to_tree(size, hashes, directory);
+
         }
         emit update_timer(timer.elapsed() / 1000.0);
     }

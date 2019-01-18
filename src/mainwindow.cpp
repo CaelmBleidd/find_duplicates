@@ -14,21 +14,22 @@
 #include <QObject>
 
 
-main_window::main_window(QWidget *parent) : QMainWindow(parent), thread(nullptr), ui(new Ui::MainWindow) {
+main_window::main_window(QWidget *parent) : QMainWindow(parent), thread(nullptr), ui(new Ui::MainWindow),
+                                            searching_in_process(false)
+{
 
     ui->setupUi(this);
 
     ui->progressBar->setValue(0);
     ui->progressBar->setMinimum(0);
 
-    ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-    ui->treeWidget->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-    ui->treeWidget->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-    ui->treeWidget->header()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    ui->treeWidget->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+
+    ui->treeWidget->setStyleSheet("QTreeWidget { color: black }");
 
     ui->actionCancel->setEnabled(false);
 
-    ui->treeWidget->setSortingEnabled(true);
+    ui->treeWidget->setSortingEnabled(false);
 
     QCommonStyle style;
 
@@ -59,25 +60,50 @@ void main_window::show_number_of_duplicates(double seconds) {
     box.setText(QString("%1 duplicates found in %2 seconds").arg(duplicates_number).arg(seconds));
     box.addButton(QMessageBox::Ok);
     box.exec();
+    if (duplicates_number == 0)
+        show_directory(QDir::currentPath());
+    ui->actionCancel->setDisabled(true);
+    ui->actionScan_directory->setDisabled(true);
+    ui->actionGo_back->setEnabled(true);
+    ui->actionGo_home->setEnabled(true);
 }
 
 
-void main_window::change_tree(qint64 size, QMap<QString, QVector<QString>> hashes, const QDir & directory) {
+void main_window::change_tree(qint64 size, QMap<QString, QVector<QString>> const &hashes, const QDir & directory) {
     for (auto hash: hashes.keys()) {
         if (hashes[hash].size() > 1) {
             ++duplicates_number;
             QTreeWidgetItem *parent = new QTreeWidgetItem(ui->treeWidget);
-            set_data(parent, *hash.begin(), size, directory.path());
+
+
+//            QDir file(QDir::currentPath());
+//            item->setText(0, file.relativeFilePath(path));
+
+            parent->setText(0, QDir(QDir::currentPath()).relativeFilePath(hashes[hash][0]));
+//            set_data(parent, hashes[hash][0]);
             for (auto path: hashes[hash]) {
                 QTreeWidgetItem *child = new QTreeWidgetItem();
-                set_data(child, path, size, directory.path());
+//                set_data(child, path);
+                child->setText(0, QDir(QDir::currentPath()).relativeFilePath(path));
+
+                child->setBackgroundColor(1, Qt::green);
                 parent->addChild(child);
             }
-//            parent->sortChildren(3, Qt::SortOrder::AscendingOrder);
+
             ui->treeWidget->addTopLevelItem(parent);
         }
-//    ui->treeWidget->sortItems(2, Qt::SortOrder::DescendingOrder);
     }
+}
+
+void main_window::scanning_was_stopped() {
+    ui->progressBar->setValue(0);
+    ui->actionCancel->setDisabled(true);
+
+    show_directory(QDir::currentPath());
+    _last_scanned_directory = "";
+    ui->actionScan_directory->setEnabled(true);
+    ui->actionGo_home->setEnabled(true);
+    ui->actionGo_back->setEnabled(true);
 }
 
 //надо вынести
@@ -95,6 +121,7 @@ void main_window::scan_directory() {
         hash_thread->moveToThread(thread);
 
         ui->actionGo_home->setDisabled(true);
+        ui->actionGo_back->setDisabled(true);
 
         qRegisterMetaType<QMap<QString, QVector<QString>>>("QMap<QString, QVector<QString>>");
         qRegisterMetaType<QDir>("QDir");
@@ -102,20 +129,27 @@ void main_window::scan_directory() {
         connect(thread, SIGNAL(started()), hash_thread, SLOT(process()));
         connect(hash_thread, SIGNAL(update_timer(double)), this, SLOT(show_number_of_duplicates(double)));
 
+
+        connect(hash_thread, SIGNAL(scanning_was_stopped()), this, SLOT(scanning_was_stopped()));
         connect(hash_thread, SIGNAL(add_to_tree(qint64, QMap<QString, QVector<QString>> const&, QDir const&)),
                 this, SLOT(change_tree(qint64, QMap<QString, QVector<QString>> const&, QDir const&)));
+
+        connect(hash_thread, SIGNAL(update_progress_bar()), this, SLOT(update_progress_value()));
+        connect(hash_thread, SIGNAL(set_max_progress_value(int)), this, SLOT(change_max_progress_value(int)));
 
         connect(hash_thread, SIGNAL(finished()), thread, SLOT(quit()));
         connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
         connect(hash_thread, SIGNAL(finished()), hash_thread, SLOT(deleteLater()));
 
+        ui->progressBar->setValue(0);
 
-        thread->start();
+        searching_in_process = true;
+        thread->start(); 
         ui->actionCancel->setEnabled(true);
-        ui->actionScan_directory->setDisabled(true);
-
    }
 }
+
+
 
 //надо вынести
 void main_window::clear_all_duplicates() {
@@ -124,7 +158,7 @@ void main_window::clear_all_duplicates() {
         for (int i = 0; i < ui->treeWidget->topLevelItemCount(); ++i) {
             QTreeWidgetItem *parent = ui->treeWidget->topLevelItem(i);
             for (int j = 1; j < parent->childCount(); ++j) {
-                QFile(parent->child(j)->text(1)).remove();
+                QFile(parent->child(j)->text(0)).remove();
             }
         }
         information_form("All duplicates has been removed");
@@ -137,6 +171,8 @@ void main_window::clear_all_duplicates() {
 void main_window::show_directory(QString const &dir) {
     ui->treeWidget->clear();
 
+    ui->progressBar->setValue(0);
+
     QDirIterator iter(dir, QDir::NoDot | QDir::AllEntries);
     QDir::setCurrent(dir);
     setWindowTitle(QString("Directory content - %1").arg(QDir::currentPath()));
@@ -144,31 +180,29 @@ void main_window::show_directory(QString const &dir) {
     while (iter.hasNext()) {
         iter.next();
         QTreeWidgetItem *item = new QTreeWidgetItem(ui->treeWidget);
-        set_data(item, iter.filePath(), iter.fileInfo().size(), iter.fileName());
+        set_data(item, iter.filePath());
     }
     ui->treeWidget->sortItems(0, Qt::SortOrder::AscendingOrder);
 }
 
 
 
-//что-то с этим делать нужно, это не ок
-void main_window::set_data(QTreeWidgetItem *item, const QString &path, qint64 size, QString const& directory) {
-    QFileInfo file(path);
+void main_window::set_data(QTreeWidgetItem *item, const QString &path) {
+    QDir file(QDir::currentPath());
 
-    item->setTextColor(0, Qt::black);
-    item->setTextColor(1, Qt::gray);
-    item->setTextColor(2, Qt::red);
-    item->setTextColor(3, Qt::blue);
+    item->setText(0, file.relativeFilePath(path));
+}
 
+void main_window::change_max_progress_value(int value) {
+    ui->progressBar->setMaximum(value);
+}
 
-    item->setText(0, file.fileName());
-    item->setText(1, directory);
-    item->setData(2, Qt::DisplayRole, size);
-//    item->setData(3, Qt::DisplayRole, file.lastModified());
+void main_window::update_progress_value() {
+    ui->progressBar->setValue(ui->progressBar->value() + 1);
 }
 
 void main_window::change_directory(QTreeWidgetItem *item) {
-    QString line = QDir::currentPath() + '/' + item->text(0);
+    QString line = QDir::currentPath() + QDir::separator() + item->text(0);
     if (QFileInfo(line).isDir()) {
         main_window::show_directory(line);
     }
@@ -198,6 +232,6 @@ void main_window::show_about_dialog() {
 }
 
 void main_window::cancel() {
-    if (thread != nullptr)
+    if (thread != nullptr && searching_in_process)
         thread->requestInterruption();
 }

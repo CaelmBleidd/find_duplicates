@@ -33,6 +33,10 @@ signals:
     void finished();
     void add_to_tree(qint64, QMap<QString, QVector<QString>> const&, QDir const&);
     void update_timer(double);
+
+    void update_progress_bar();
+    void set_max_progress_value(int);
+    void scanning_was_stopped();
 };
 
 #endif // HASHTHREAD_H
