@@ -51,7 +51,7 @@ void main_window::keyPressEvent(QKeyEvent *event) {
         return;
     }
 
-    if (event->key() == Qt::Key_Backspace && ui->listWidget->selectedItems().size() > 0) {
+    if (event->key() == Qt::Key_Backspace) {
         return_to_folder();
         return;
     }
